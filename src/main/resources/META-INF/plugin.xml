@@ -1,18 +1,11 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.owjs3901.vimswitchko</id>
+    <id>com.devfive.vim_switch_ko</id>
     <name>vim-switch-ko</name>
     <vendor>owjs3901</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.owjs3901.vimswitchko.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-    </extensions>
-
     <applicationListeners>
-        <listener class="com.github.owjs3901.vimswitchko.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.devfive.vim_switch_ko.VimSwitchKoListener" topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 </idea-plugin>

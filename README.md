@@ -1,44 +1,39 @@
 # vim-switch-ko
 
-![Build](https://github.com/owjs3901/vim-switch-ko/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+## Description
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [ ] Get familiar with the [template documentation][template].
-- [ ] Adjust the [pluginGroup](./gradle.properties), [plugin ID](./src/main/resources/META-INF/plugin.xml) and [sources package](./src/main/kotlin).
-- [ ] Adjust the plugin description in `README` (see [Tips][docs:plugin-description])
-- [ ] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [ ] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [ ] Set the `PLUGIN_ID` in the above README badges.
-- [ ] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
+VIM Switch Ko is a plugin for switching between English and Korean in IdeaVIM.
 
-<!-- Plugin description -->
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+In the normal mode, you can not move the cursor in the korean input mode.
 
-This specific section is a source for the [plugin.xml](/src/main/resources/META-INF/plugin.xml) file which will be extracted by the [Gradle](/build.gradle.kts) during the build process.
+But with this plugin, you can move the cursor in the korean input mode.
 
-To keep everything working, do not remove `<!-- ... -->` sections. 
-<!-- Plugin description end -->
+1. When Switch to Normal Mode, the input mode is changed to English. (Ctrl + C, ESC)
+2. Block switching to korean input mode in normal mode.
+
+## Demo
+
+[![Video Label](http://img.youtube.com/vi/xYpHaewa1FU/0.jpg)](https://youtu.be/xYpHaewa1FU)
+
 
 ## Installation
 
-- Using the IDE built-in plugin system:
-  
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "vim-switch-ko"</kbd> >
-  <kbd>Install</kbd>
-  
-- Manually:
+I uploaded this plugin to the JetBrains plugin marketplace.
 
-  Download the [latest release](https://github.com/owjs3901/vim-switch-ko/releases/latest) and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+But, it is not approved yet.
 
 
----
-Plugin based on the [IntelliJ Platform Plugin Template][template].
+## ETC
 
-[template]: https://github.com/JetBrains/intellij-platform-plugin-template
-[docs:plugin-description]: https://plugins.jetbrains.com/docs/intellij/plugin-user-experience.html#plugin-description-and-presentation
+I don't have a kotlin project experience.  
+This project is my first kotlin project.  
+And I started this project today. So that I don't know how to write a kotlin code well.  
+
+If you have any advice, please let me know.  
+And contribution is always welcome.
+
+
+
+
+
+

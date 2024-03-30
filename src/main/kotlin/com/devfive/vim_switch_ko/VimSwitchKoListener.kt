@@ -1,66 +1,70 @@
 package com.devfive.vim_switch_ko
 
-import com.intellij.ide.DataManager
+import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.plugins.PluginManager
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.StartupActivity
+import com.intellij.openapi.project.ProjectManager
 import java.awt.event.KeyEvent
 import java.awt.im.InputContext
 
-class ProjectOpenStartUpActivity : StartupActivity.DumbAware {
+class VimSwitchKoListener : AppLifecycleListener {
+    override fun appStarted() {
+        super.appStarted()
+        var enabled = false
+        fun enableIdeaVIM(): Boolean {
+            if (enabled) return true
 
-    override fun runActivity(project: Project) {
-
-        val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == PluginId.getId("IdeaVIM") }
-
-        thisLogger().warn("pluginDescriptor $pluginDescriptor")
-        thisLogger().warn("pluginDescriptor ${pluginDescriptor?.isEnabled}")
-        thisLogger().warn("pluginDescriptor ${PluginManager.getLoadedPlugins().map {
-            it.pluginId
-        }}")
-        if (pluginDescriptor == null || !pluginDescriptor.isEnabled){
-            thisLogger().warn("IdeaVIM plugin is not enabled")
-            return
+//            VIM 플러그인을 중간에 추가할 수 있습니다.
+            val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == PluginId.getId("IdeaVIM") }
+            enabled = pluginDescriptor != null && pluginDescriptor.isEnabled
+            return enabled
         }
-        fun isCursorInEditor(event: AnActionEvent): Boolean {
-            return event.dataContext.getData("editor") != null
-        }
-
 
         fun toEnglishIME(event: KeyEvent) {
             val context = (event.source.javaClass.getMethod("getInputContext").invoke(event.source) as InputContext)
             context.setCharacterSubsets(null)
+            InputContext.getInstance().setCharacterSubsets(null)
+        }
+
+        var editors:List<Any>?  = null
+        fun loadEditors(){
+            val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == PluginId.getId("IdeaVIM") }
+            val pluginClassLoader = pluginDescriptor!!.classLoader
+            val injectClass = pluginClassLoader.loadClass("com.maddyhome.idea.vim.api.VimInjectorKt")
+            val instance = injectClass?.getMethod("getInjector")!!.invoke(null)
+            val editorGroup = instance.javaClass.getMethod("getEditorGroup").invoke(instance)
+            editors = editorGroup.javaClass.getMethod("getEditors").invoke(editorGroup) as ArrayList<Any>
+
         }
 
 
-        val pluginClassLoader = pluginDescriptor.classLoader
-        val injectClass = pluginClassLoader.loadClass("com.maddyhome.idea.vim.api.VimInjectorKt")
-        val instance = injectClass?.getMethod("getInjector")!!.invoke(null)
-        val editorGroup = instance.javaClass.getMethod("getEditorGroup").invoke(instance)
-        thisLogger().warn("editorGroup $editorGroup ${editorGroup.javaClass} ${editorGroup.javaClass.methods.toList()}")
-        val editors = editorGroup.javaClass.getMethod("getEditors").invoke(editorGroup) as ArrayList<Any>
-
         fun isCurrentModeNormal(): Boolean {
-            val currentFile = FileEditorManager.getInstance(project).selectedEditor?.file?.path ?: return false
-            for (editor in editors) {
-                val virtualFile = editor.javaClass.getMethod("getVirtualFile").invoke(editor).javaClass.getMethod("getPath").invoke(editor) as String
-                if (virtualFile == currentFile) {
-                    val mode = editor.javaClass.getMethod("getMode").invoke(editor)
-                    return mode.toString().startsWith("NORMAL")
+            ProjectManager.getInstance().openProjects.forEach { project ->
+                if(editors == null){
+                    loadEditors()
+                    if(editors == null)
+                        return false
+                }
+                val currentFile = FileEditorManager.getInstance(project).selectedEditor?.file?.path ?: return false
+                for (editor in editors!!) {
+                    val virtualFilePath = editor.javaClass.getMethod("getPath").invoke(editor)
+                    if (virtualFilePath == currentFile) {
+                        val mode = editor.javaClass.getMethod("getMode").invoke(editor)
+                        return mode != null && mode.toString().startsWith("NORMAL")
+                    }
                 }
             }
             return false
         }
         IdeEventQueue.getInstance().addDispatcher(IdeEventQueue.EventDispatcher { e ->
-            if (e !is KeyEvent)
+            if (e !is KeyEvent) return@EventDispatcher false
+            if (!enableIdeaVIM()) {
                 return@EventDispatcher false
-            if(e.id != KeyEvent.KEY_PRESSED){
-                if(e.keyCode==0&&e.keyChar.code==65535 &&isCurrentModeNormal()){
+            }
+            if (e.id != KeyEvent.KEY_PRESSED) {
+                if (e.keyCode == 0 && e.keyChar.code == 65535 && isCurrentModeNormal()) {
                     // Switching to English IME when switching korean mode in normal mode
                     toEnglishIME(e)
                 }
@@ -72,11 +76,8 @@ class ProjectOpenStartUpActivity : StartupActivity.DumbAware {
                 toEnglishIME(e)
             } else if (e.isControlDown && e.keyCode == KeyEvent.VK_C) {
                 // Switch to English IME when pressing Ctrl+C in normal mode
-                DataManager.getInstance().dataContextFromFocusAsync.then {
-                    val event = AnActionEvent.createFromDataContext("context", null, it)
-                    if (isCursorInEditor(event) && !isCurrentModeNormal()) {
-                        toEnglishIME(e)
-                    }
+                if (!isCurrentModeNormal()) {
+                    toEnglishIME(e)
                 }
             }
             return@EventDispatcher false
