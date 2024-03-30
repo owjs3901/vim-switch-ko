@@ -1,4 +1,4 @@
-package org.jetbrains.plugins.template
+package com.github.owjs3901.vimswitchko
 
 import com.intellij.DynamicBundle
 import org.jetbrains.annotations.NonNls
