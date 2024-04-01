@@ -1,7 +1,7 @@
 # vim-switch-ko
 
 ## Description
-
+<!-- Plugin description -->
 VIM Switch Ko is a plugin for switching between English and Korean in IdeaVIM.
 
 In the normal mode, you can not move the cursor in the korean input mode.
@@ -10,7 +10,7 @@ But with this plugin, you can move the cursor in the korean input mode.
 
 1. When Switch to Normal Mode, the input mode is changed to English. (Ctrl + C, ESC)
 2. Block switching to korean input mode in normal mode.
-
+<!-- Plugin description end -->
 ## Demo
 
 [![Video Label](http://img.youtube.com/vi/xYpHaewa1FU/0.jpg)](https://youtu.be/xYpHaewa1FU)
