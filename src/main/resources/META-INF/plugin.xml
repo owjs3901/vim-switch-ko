@@ -3,6 +3,9 @@
     <id>com.devfive.vim_switch_ko</id>
     <name>vim-switch-ko</name>
     <vendor>owjs3901</vendor>
+    <description><![CDATA[
+Switch keyboard input source in Vim's normal mode. This plugin is useful for Korean users who switch between English and Korean input sources. In Vim's normal mode, it's inconvenient to control with a Korean input source. This plugin provides a solution for this problem.
+]]></description>
 
     <depends>com.intellij.modules.platform</depends>
     <applicationListeners>
