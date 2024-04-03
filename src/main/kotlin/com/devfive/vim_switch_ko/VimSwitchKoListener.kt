@@ -3,6 +3,7 @@ package com.devfive.vim_switch_ko
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.plugins.PluginManager
+import com.intellij.ide.plugins.cl.PluginAwareClassLoader
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.ProjectManager
@@ -31,8 +32,8 @@ class VimSwitchKoListener : AppLifecycleListener {
         var editors:List<Any>?  = null
         fun loadEditors(){
             val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == PluginId.getId("IdeaVIM") }
-            val pluginClassLoader = pluginDescriptor!!.classLoader
-            val injectClass = pluginClassLoader.loadClass("com.maddyhome.idea.vim.api.VimInjectorKt")
+            val pluginClassLoader = pluginDescriptor!!.classLoader as PluginAwareClassLoader
+            val injectClass = pluginClassLoader.tryLoadingClass("com.maddyhome.idea.vim.api.VimInjectorKt", true)
             val instance = injectClass?.getMethod("getInjector")!!.invoke(null)
             val editorGroup = instance.javaClass.getMethod("getEditorGroup").invoke(instance)
             editors = editorGroup.javaClass.getMethod("getEditors").invoke(editorGroup) as ArrayList<Any>
