@@ -18,9 +18,11 @@ But with this plugin, you can move the cursor in the korean input mode.
 
 ## Installation
 
-I uploaded this plugin to the JetBrains plugin marketplace.
+![제목 없음](https://github.com/owjs3901/vim-switch-ko/assets/12480623/2aefaf04-7f75-47d2-8012-46dbead12b23)
 
-But, it is not approved yet.
+https://plugins.jetbrains.com/plugin/24069-vim-switch-ko
+
+Search for "vim switch ko" and then install!
 
 
 ## ETC
