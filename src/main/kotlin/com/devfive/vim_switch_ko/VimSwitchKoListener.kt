@@ -8,7 +8,6 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.startup.ProjectActivity
 import java.awt.event.KeyEvent
 import java.awt.im.InputContext
@@ -26,8 +25,9 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             return enabled
         }
 
-        fun toEnglishIME(context: InputContext?) {
-            context?.setCharacterSubsets(null)
+        fun toEnglishIME(vararg context: InputContext?) {
+            for (context in context)
+                context?.setCharacterSubsets(null)
             InputContext.getInstance().setCharacterSubsets(null)
         }
 
@@ -49,19 +49,17 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
 
 
         fun isCurrentModeNormal(forcedLoad: Boolean = false): Boolean {
-            ProjectManager.getInstance().openProjects.forEach { project ->
-                if (editors == null || forcedLoad) {
-                    loadEditors()
-                    if (editors == null)
-                        return false
-                }
-                val currentFile = FileEditorManager.getInstance(project).selectedEditor?.file?.path ?: return false
-                for (editor in editors!!) {
-                    val virtualFilePath = editor.javaClass.getMethod("getPath").invoke(editor)
-                    if (virtualFilePath == currentFile) {
-                        val mode = editor.javaClass.getMethod("getMode").invoke(editor)
-                        return mode != null && mode.toString().startsWith("NORMAL")
-                    }
+            if (editors == null || forcedLoad) {
+                loadEditors()
+                if (editors == null)
+                    return false
+            }
+            val currentFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile.path
+            for (editor in editors!!) {
+                val virtualFilePath = editor.javaClass.getMethod("getPath").invoke(editor)
+                if (virtualFilePath == currentFile) {
+                    val mode = editor.javaClass.getMethod("getMode").invoke(editor)
+                    return mode != null && mode.toString().startsWith("NORMAL")
                 }
             }
             return false
