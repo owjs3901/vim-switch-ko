@@ -5,7 +5,6 @@ import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.plugins.cl.PluginAwareClassLoader
 import com.intellij.openapi.editor.impl.EditorComponentImpl
 import com.intellij.openapi.extensions.PluginId
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -54,7 +53,12 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
                 if (editors == null)
                     return false
             }
-            val currentFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile.path
+            if (FocusManager.getCurrentManager().focusOwner !is EditorComponentImpl)
+                return false
+            val virtualFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile
+                ?: return false
+            val currentFile =
+                virtualFile.path
             for (editor in editors!!) {
                 val virtualFilePath = editor.javaClass.getMethod("getPath").invoke(editor)
                 if (virtualFilePath == currentFile) {
