@@ -8,6 +8,7 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.awt.im.InputContext
 import javax.swing.FocusManager
@@ -26,8 +27,9 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
 
         fun toEnglishIME(vararg context: InputContext?) {
             for (context in context)
-                context?.setCharacterSubsets(null)
+                context!!.setCharacterSubsets(null)
             InputContext.getInstance().setCharacterSubsets(null)
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner.inputContext.setCharacterSubsets(null)
         }
 
         fun isFocusedEditor(): Boolean {
@@ -55,28 +57,38 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             }
             if (FocusManager.getCurrentManager().focusOwner !is EditorComponentImpl)
                 return false
-            val virtualFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile
-                ?: return false
-            val currentFile =
-                virtualFile.path
+
+            val currentEditor = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor
+
             for (editor in editors!!) {
-                val virtualFilePath = editor.javaClass.getMethod("getPath").invoke(editor)
-                if (virtualFilePath == currentFile) {
+                val compareEditor = editor.javaClass.getMethod("getEditor").invoke(editor)
+                if (compareEditor == currentEditor) {
                     val mode = editor.javaClass.getMethod("getMode").invoke(editor)
                     return mode != null && mode.toString().startsWith("NORMAL")
                 }
             }
             return false
         }
-        FocusManager.getCurrentManager().addPropertyChangeListener("focusOwner") {
+
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("focusOwner") {
             if (isFocusedEditor() && enableIdeaVIM() && isCurrentModeNormal(true))
                 toEnglishIME((it.newValue as EditorComponentImpl).inputContext)
+            if (it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
+                // #TODO: Fix font in vim search mode
+                // vim search mode
+//                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
+//                val component = editor.javaClass.getMethod("getComponent").invoke(editor)
+//                val font = component.javaClass.getMethod("getFont").invoke(component)
+//                val parent = (it.newValue as JTextField).parent
+//                val label = parent.javaClass.getMethod("getLabel").invoke(parent)
+//                label.javaClass.getMethod("setFont").invoke(label, font)
+            }
         }
-
         IdeEventQueue.getInstance().addDispatcher(IdeEventQueue.EventDispatcher { e ->
             if (e !is KeyEvent) return@EventDispatcher false
-            if (!isFocusedEditor())
+            if (!isFocusedEditor()) {
                 return@EventDispatcher false
+            }
 
             if (!enableIdeaVIM())
                 return@EventDispatcher false
@@ -91,8 +103,8 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             if (e.keyCode == KeyEvent.VK_ESCAPE) {
                 // Always switch to English IME when pressing ESC
                 toEnglishIME(e.component.inputContext)
-            } else if (e.isControlDown && e.keyCode == KeyEvent.VK_C) {
-                // Switch to English IME when pressing Ctrl+C in normal mode
+            } else if (e.isControlDown && (e.keyCode == KeyEvent.VK_C || e.keyCode == KeyEvent.VK_OPEN_BRACKET)) {
+                // Switch to English IME when pressing Ctrl+C or Ctrl+[ in normal mode
                 if (!isCurrentModeNormal())
                     toEnglishIME(e.component.inputContext)
             }
