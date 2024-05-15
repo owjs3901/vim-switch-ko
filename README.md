@@ -1,5 +1,5 @@
 # vim-switch-ko
-
+<iframe width="245px" height="48px" src="https://plugins.jetbrains.com/embeddable/install/24069"></iframe>
 ## Description
 <!-- Plugin description -->
 VIM Switch Ko is a plugin for switching between English and Korean in IdeaVIM.
