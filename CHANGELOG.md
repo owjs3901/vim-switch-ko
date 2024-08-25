@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.0.6] - 2024-08-25
+
+- Change to English when pressed `ESC` in ProjectView
+- Support 2024.2 version
+
 ## [0.0.5] - 2024-05-14
 
 - Support to change to english when type `ctrl+[`

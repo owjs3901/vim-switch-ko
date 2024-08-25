@@ -2,7 +2,7 @@ package com.devfive.vim_switch_ko
 
 import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.plugins.PluginManager
-import com.intellij.ide.plugins.cl.PluginAwareClassLoader
+import com.intellij.ide.projectView.impl.ProjectViewTree
 import com.intellij.openapi.editor.impl.EditorComponentImpl
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAware
@@ -36,13 +36,32 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             return FocusManager.getCurrentManager().focusOwner is EditorComponentImpl
         }
 
+        fun getSuperClasses(instance: Any): List<Class<*>> {
+            val superClasses = mutableListOf<Class<*>>()
+            var currentClass: Class<*>? = instance::class.java
+
+            while (currentClass?.superclass != null) {
+                currentClass = currentClass.superclass
+                currentClass?.let { superClasses.add(it) }
+            }
+
+            return superClasses
+        }
+
+        fun isProjectViewPanel(): Boolean {
+            return FocusManager.getCurrentManager().focusOwner is ProjectViewTree
+        }
+
         var editors: List<Any>? = null
         fun loadEditors() {
-            val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == PluginId.getId("IdeaVIM") }
+            val vimPluginId = PluginId.getId("IdeaVIM")
+            val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == vimPluginId }
             if (pluginDescriptor == null)
                 return
-            val pluginClassLoader = pluginDescriptor.pluginClassLoader as PluginAwareClassLoader
-            val injectClass = pluginClassLoader.tryLoadingClass("com.maddyhome.idea.vim.api.VimInjectorKt", true)
+            val pluginClassLoader = pluginDescriptor.pluginClassLoader
+            if (pluginClassLoader == null)
+                return
+            val injectClass = pluginClassLoader.loadClass("com.maddyhome.idea.vim.api.VimInjectorKt")
             val instance = injectClass?.getMethod("getInjector")!!.invoke(null)
             val editorGroup = instance.javaClass.getMethod("getEditorGroup").invoke(instance)
             editors = editorGroup.javaClass.getMethod("getEditors").invoke(editorGroup) as ArrayList<Any>
@@ -73,7 +92,7 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("focusOwner") {
             if (isFocusedEditor() && enableIdeaVIM() && isCurrentModeNormal(true))
                 toEnglishIME((it.newValue as EditorComponentImpl).inputContext)
-            if (it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
+            if (it.newValue != null && it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
                 // #TODO: Fix font in vim search mode
                 // vim search mode
 //                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
@@ -86,12 +105,19 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
         }
         IdeEventQueue.getInstance().addDispatcher(IdeEventQueue.EventDispatcher { e ->
             if (e !is KeyEvent) return@EventDispatcher false
-            if (!isFocusedEditor()) {
-                return@EventDispatcher false
-            }
 
+            val projectView = isProjectViewPanel()
+            val editorView = isFocusedEditor()
+
+            if (!editorView && !projectView)
+                return@EventDispatcher false
             if (!enableIdeaVIM())
                 return@EventDispatcher false
+            if (projectView) {
+                if (e.keyCode == KeyEvent.VK_ESCAPE)
+                    toEnglishIME(e.component.inputContext)
+                return@EventDispatcher false
+            }
             if (e.id != KeyEvent.KEY_PRESSED) {
                 if (e.keyCode == 0 && e.keyChar.code == 65535 && isCurrentModeNormal()) {
                     // Switching to English IME when switching korean mode in normal mode
