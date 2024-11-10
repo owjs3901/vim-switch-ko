@@ -3,14 +3,17 @@ package com.devfive.vim_switch_ko
 import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.projectView.impl.ProjectViewTree
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.impl.EditorComponentImpl
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import com.intellij.openapi.vfs.VirtualFile
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.awt.im.InputContext
+import java.lang.reflect.Method
 import javax.swing.FocusManager
 
 internal class VimSwitchKoListener : ProjectActivity, DumbAware {
@@ -36,23 +39,11 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             return FocusManager.getCurrentManager().focusOwner is EditorComponentImpl
         }
 
-        fun getSuperClasses(instance: Any): List<Class<*>> {
-            val superClasses = mutableListOf<Class<*>>()
-            var currentClass: Class<*>? = instance::class.java
-
-            while (currentClass?.superclass != null) {
-                currentClass = currentClass.superclass
-                currentClass?.let { superClasses.add(it) }
-            }
-
-            return superClasses
-        }
-
         fun isProjectViewPanel(): Boolean {
             return FocusManager.getCurrentManager().focusOwner is ProjectViewTree
         }
 
-        var editors: List<Any>? = null
+        var getEditor: Method? = null
         fun loadEditors() {
             val vimPluginId = PluginId.getId("IdeaVIM")
             val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == vimPluginId }
@@ -61,47 +52,43 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             val pluginClassLoader = pluginDescriptor.pluginClassLoader
             if (pluginClassLoader == null)
                 return
-            val injectClass = pluginClassLoader.loadClass("com.maddyhome.idea.vim.api.VimInjectorKt")
-            val instance = injectClass?.getMethod("getInjector")!!.invoke(null)
-            val editorGroup = instance.javaClass.getMethod("getEditorGroup").invoke(instance)
-            editors = editorGroup.javaClass.getMethod("getEditors").invoke(editorGroup) as ArrayList<Any>
+
+            ApplicationManager.getApplication().invokeLater {
+                val injectClass2 = pluginClassLoader.loadClass("com.maddyhome.idea.vim.helper.EditorHelper")
+                injectClass2.methods.forEach { println(it) }
+                getEditor = injectClass2.getMethod("getEditor", VirtualFile::class.java)
+            }
         }
 
 
-        fun isCurrentModeNormal(forcedLoad: Boolean = false): Boolean {
-            if (editors == null || forcedLoad) {
+        fun isCurrentModeNormal(): Boolean {
+            if (getEditor == null) {
                 loadEditors()
-                if (editors == null)
+                if (getEditor == null)
                     return false
             }
             if (FocusManager.getCurrentManager().focusOwner !is EditorComponentImpl)
                 return false
 
-            val currentEditor = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor
-
-            for (editor in editors!!) {
-                val compareEditor = editor.javaClass.getMethod("getEditor").invoke(editor)
-                if (compareEditor == currentEditor) {
-                    val mode = editor.javaClass.getMethod("getMode").invoke(editor)
-                    return mode != null && mode.toString().startsWith("NORMAL")
-                }
-            }
-            return false
+            val virtualFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile
+            val editor = getEditor!!.invoke(null, virtualFile)
+            val mode = editor.javaClass.getMethod("getMode").invoke(editor)
+            return mode != null && mode.toString().startsWith("NORMAL")
         }
 
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("focusOwner") {
-            if (isFocusedEditor() && enableIdeaVIM() && isCurrentModeNormal(true))
+            if (isFocusedEditor() && enableIdeaVIM() && isCurrentModeNormal())
                 toEnglishIME((it.newValue as EditorComponentImpl).inputContext)
-            if (it.newValue != null && it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
-                // #TODO: Fix font in vim search mode
-                // vim search mode
-//                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
-//                val component = editor.javaClass.getMethod("getComponent").invoke(editor)
-//                val font = component.javaClass.getMethod("getFont").invoke(component)
-//                val parent = (it.newValue as JTextField).parent
-//                val label = parent.javaClass.getMethod("getLabel").invoke(parent)
-//                label.javaClass.getMethod("setFont").invoke(label, font)
-            }
+//            if (it.newValue != null && it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
+//                // #TODO: Fix font in vim search mode
+//                // vim search mode
+////                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
+////                val component = editor.javaClass.getMethod("getComponent").invoke(editor)
+////                val font = component.javaClass.getMethod("getFont").invoke(component)
+////                val parent = (it.newValue as JTextField).parent
+////                val label = parent.javaClass.getMethod("getLabel").invoke(parent)
+////                label.javaClass.getMethod("setFont").invoke(label, font)
+//            }
         }
         IdeEventQueue.getInstance().addDispatcher(IdeEventQueue.EventDispatcher { e ->
             if (e !is KeyEvent) return@EventDispatcher false

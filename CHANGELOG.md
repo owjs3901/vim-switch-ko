@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+## [0.0.7] - 2024-08-25
+- Using internal VIM API
+
 ## [0.0.6] - 2024-08-25
 
 - Change to English when pressed `ESC` in ProjectView
