@@ -3,13 +3,20 @@ package com.devfive.vim_switch_ko
 import com.intellij.ide.IdeEventQueue
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.projectView.impl.ProjectViewTree
+import com.intellij.ide.ui.UISettings
+import com.intellij.ide.ui.UISettingsUtils
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.EditorKind
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.impl.EditorComponentImpl
+import com.intellij.openapi.editor.impl.EditorImpl
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFile
+import java.awt.Font
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.awt.im.InputContext
@@ -44,6 +51,7 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
         }
 
         var getEditor: Method? = null
+        var getVirtualFile: Method? = null
         fun loadEditors() {
             val vimPluginId = PluginId.getId("IdeaVIM")
             val pluginDescriptor = PluginManager.getLoadedPlugins().find { it.pluginId == vimPluginId }
@@ -57,6 +65,7 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
                 val injectClass2 = pluginClassLoader.loadClass("com.maddyhome.idea.vim.helper.EditorHelper")
                 injectClass2.methods.forEach { println(it) }
                 getEditor = injectClass2.getMethod("getEditor", VirtualFile::class.java)
+                getVirtualFile = injectClass2.getMethod("getVirtualFile", Editor::class.java)
             }
         }
 
@@ -70,7 +79,8 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
             if (FocusManager.getCurrentManager().focusOwner !is EditorComponentImpl)
                 return false
 
-            val virtualFile = (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor.virtualFile
+            val virtualFile = getVirtualFile!!.invoke(null, (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor)
+            println("vitual file $virtualFile ${(FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor}")
             val editor = getEditor!!.invoke(null, virtualFile)
             val mode = editor.javaClass.getMethod("getMode").invoke(editor)
             return mode != null && mode.toString().startsWith("NORMAL")
@@ -79,16 +89,26 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener("focusOwner") {
             if (isFocusedEditor() && enableIdeaVIM() && isCurrentModeNormal())
                 toEnglishIME((it.newValue as EditorComponentImpl).inputContext)
-//            if (it.newValue != null && it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
-//                // #TODO: Fix font in vim search mode
-//                // vim search mode
-////                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
-////                val component = editor.javaClass.getMethod("getComponent").invoke(editor)
-////                val font = component.javaClass.getMethod("getFont").invoke(component)
-////                val parent = (it.newValue as JTextField).parent
-////                val label = parent.javaClass.getMethod("getLabel").invoke(parent)
-////                label.javaClass.getMethod("setFont").invoke(label, font)
-//            }
+            if (it.newValue != null && it.newValue.javaClass.name == "com.maddyhome.idea.vim.ui.ex.ExTextField") {
+////                // #TODO: Fix font in vim search mode
+//                val editor = it.newValue.javaClass.getMethod("getEditor").invoke(it.newValue)
+//
+//                val fontSize = when {
+//                    editor is EditorImpl -> editor.fontSize2D
+//                    UISettings.getInstance().presentationMode -> UISettingsUtils.getInstance().presentationModeFontSize
+////                    editor?.editorKind == EditorKind.CONSOLE -> UISettingsUtils.getInstance().scaledConsoleFontSize
+//                    else -> UISettingsUtils.getInstance().scaledEditorFontSize
+//                }
+//                val scheme = EditorColorsManager.getInstance().globalScheme
+//                scheme.fontPreferences.realFontFamilies.forEach { fontName ->
+//                    val font = Font(fontName, Font.PLAIN, scheme.editorFontSize)
+//                    if (font.canDisplayUpTo("") == -1) {
+////                        return font.deriveFont(fontSize)
+//                    }
+//                }
+//                println("${EditorColorsManager.getInstance().globalScheme.editorFontName} ${UISettingsUtils.getInstance().scaledConsoleFontSize} $fontSize")
+//                editor.javaClass.getMethod("setFont").invoke(editor, Font("JetBrains Mono", Font.PLAIN,scheme.editorFontSize ).deriveFont(13.0F))
+            }
         }
         IdeEventQueue.getInstance().addDispatcher(IdeEventQueue.EventDispatcher { e ->
             if (e !is KeyEvent) return@EventDispatcher false
