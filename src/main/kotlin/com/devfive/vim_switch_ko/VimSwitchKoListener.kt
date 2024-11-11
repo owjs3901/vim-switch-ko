@@ -36,8 +36,8 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
         }
 
         fun toEnglishIME(vararg context: InputContext?) {
-            for (context in context)
-                context!!.setCharacterSubsets(null)
+            for (ctx in context)
+                ctx!!.setCharacterSubsets(null)
             InputContext.getInstance().setCharacterSubsets(null)
             KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner.inputContext.setCharacterSubsets(null)
         }
