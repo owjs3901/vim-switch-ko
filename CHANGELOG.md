@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+## [0.0.9] - 2024-11-11
+- Remove print
+- Fix can not write typo in file copy modal
+
 ## [0.0.8] - 2024-11-11
 - Fix etc UI issue
 

@@ -63,7 +63,6 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
 
             ApplicationManager.getApplication().invokeLater {
                 val injectClass2 = pluginClassLoader.loadClass("com.maddyhome.idea.vim.helper.EditorHelper")
-                injectClass2.methods.forEach { println(it) }
                 getEditor = injectClass2.getMethod("getEditor", VirtualFile::class.java)
                 getVirtualFile = injectClass2.getMethod("getVirtualFile", Editor::class.java)
             }
@@ -80,8 +79,7 @@ internal class VimSwitchKoListener : ProjectActivity, DumbAware {
                 return false
 
             val virtualFile = getVirtualFile!!.invoke(null, (FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor)
-            println("vitual file $virtualFile ${(FocusManager.getCurrentManager().focusOwner as EditorComponentImpl).editor}")
-            val editor = getEditor!!.invoke(null, virtualFile)
+            val editor = getEditor!!.invoke(null, virtualFile) ?: return false
             val mode = editor.javaClass.getMethod("getMode").invoke(editor)
             return mode != null && mode.toString().startsWith("NORMAL")
         }
